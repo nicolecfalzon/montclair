@@ -1,0 +1,12 @@
+{
+  "name": "montclair-events-agent",
+  "version": "1.0.0",
+  "description": "Weekly events digest for Montclair, NJ — powered by Claude + web search",
+  "main": "agent.js",
+  "scripts": {
+    "start": "node agent.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0"
+  }
+}
