@@ -1,115 +1,116 @@
-const Anthropic = require("@anthropic-ai/sdk");
+// ─── TEST MODE ────────────────────────────────────────────────────────────
+// This version uses mock data so you can test email sending without an API key.
+// Once email is working, swap back to the real agent.js
  
-// ─── Config ────────────────────────────────────────────────────────────────
-const LOCATION = "Montclair, NJ";
-const RADIUS_MILES = 10;
-const TIMEFRAME = "the next 7 days";
-const MAX_EVENTS = 15;
-const CATEGORIES = [
-  "Live Music",
-  "Family & Kids",
-  "Festivals",
-  "Arts & Culture",
-  "Community Events",
-  "Food & Drink",
-  "Outdoor & Nature",
-  "Markets & Fairs",
-];
- 
-// ─── Anthropic client ──────────────────────────────────────────────────────
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
- 
-// ─── Step 1: Scrape & extract events via web search ───────────────────────
+// ─── Step 1: Mock events (no API call) ────────────────────────────────────
 async function scrapeEvents() {
-  console.log("🔍 Searching for events in", LOCATION, "...");
+  console.log("🔍 Using mock events for test run...");
  
-  const today = new Date().toLocaleDateString("en-US", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+  const events = [
+    {
+      name: "Montclair Jazz Festival",
+      date: "Saturday, May 10",
+      time: "2:00 PM",
+      venue: "Nishuane Park, Montclair NJ",
+      category: "Live Music",
+      description: "Annual outdoor jazz festival featuring local and regional artists.",
+      url: "https://montclairjazz.com",
+      isFree: true,
+      isKidFriendly: true,
+    },
+    {
+      name: "Montclair Farmers Market",
+      date: "Saturday, May 10",
+      time: "8:00 AM – 1:00 PM",
+      venue: "Lackawanna Plaza, Montclair NJ",
+      category: "Markets & Fairs",
+      description: "Fresh local produce, artisan goods, baked goods, and live acoustic music.",
+      url: "https://montclairfarmersmarket.org",
+      isFree: true,
+      isKidFriendly: true,
+    },
+    {
+      name: "Kids Coding Workshop",
+      date: "Sunday, May 11",
+      time: "10:00 AM",
+      venue: "Montclair Public Library",
+      category: "Family & Kids",
+      description: "Free introductory coding class for ages 6–12. No experience needed!",
+      url: "https://montclairlibrary.org",
+      isFree: true,
+      isKidFriendly: true,
+    },
+    {
+      name: "Spring Art Walk",
+      date: "Saturday, May 10",
+      time: "12:00 PM – 5:00 PM",
+      venue: "Downtown Montclair",
+      category: "Arts & Culture",
+      description: "Self-guided tour of local galleries and pop-up art installations.",
+      url: null,
+      isFree: true,
+      isKidFriendly: true,
+    },
+    {
+      name: "Watchung Reservation Nature Hike",
+      date: "Sunday, May 11",
+      time: "9:00 AM",
+      venue: "Watchung Reservation, Mountainside NJ",
+      category: "Outdoor & Nature",
+      description: "Guided family-friendly hike exploring local flora and wildlife.",
+      url: "https://ucnj.org/parks",
+      isFree: true,
+      isKidFriendly: true,
+    },
+  ];
  
-  const response = await anthropic.messages.create({
-    model: "claude-sonnet-4-20250514",
-    max_tokens: 4000,
-    tools: [{ type: "web_search_20250305", name: "web_search" }],
-    messages: [
-      {
-        role: "user",
-        content: `Today is ${today}. You are a local events scout for ${LOCATION}.
- 
-Search the web thoroughly and find upcoming events happening during ${TIMEFRAME} in and within ${RADIUS_MILES} miles of ${LOCATION}.
- 
-Search sources like: Montclair Local, Patch.com Montclair, Eventbrite Essex County NJ, Baristanet, NJ.com events, Essex County parks, and any local Facebook event pages or community calendars.
- 
-Focus on these categories: ${CATEGORIES.join(", ")}.
- 
-For each event, extract:
-- name
-- date (human-readable, e.g. "Saturday, May 10")
-- time (e.g. "2:00 PM" or "All day")
-- venue (name and/or address)
-- category (pick the closest from the list above)
-- description (1-2 sentences)
-- url (source link if available)
-- isFree (true/false if known, otherwise null)
-- isKidFriendly (true/false if relevant)
- 
-Return ONLY a valid JSON array — no markdown, no explanation, no backticks.
-Find up to ${MAX_EVENTS} events. Example format:
-[{"name":"...","date":"...","time":"...","venue":"...","category":"...","description":"...","url":"...","isFree":true,"isKidFriendly":true}]`,
-      },
-    ],
-  });
- 
-  // Extract the final text block
-  const textBlocks = response.content.filter((b) => b.type === "text");
-  const raw = textBlocks.map((b) => b.text).join("");
- 
-  const jsonMatch = raw.match(/\[[\s\S]*\]/);
-  if (!jsonMatch) {
-    throw new Error("Could not find JSON array in agent response:\n" + raw);
-  }
- 
-  const events = JSON.parse(jsonMatch[0]);
-  console.log(`✅ Found ${events.length} events`);
+  console.log(`✅ Loaded ${events.length} mock events`);
   return events;
 }
  
-// ─── Step 2: Compose the email digest ─────────────────────────────────────
+// ─── Step 2: Mock email compose (no API call) ─────────────────────────────
 async function composeEmail(events) {
-  console.log("✍️  Composing email digest...");
+  console.log("✍️  Composing mock email digest...");
  
-  const response = await anthropic.messages.create({
-    model: "claude-sonnet-4-20250514",
-    max_tokens: 2000,
-    messages: [
-      {
-        role: "user",
-        content: `Write a warm, friendly weekly events email digest for someone who lives in ${LOCATION}.
+  const lines = [
+    "Subject: 🗓️ Your Montclair Weekly Events Digest — May 10–11",
+    "",
+    "Hey neighbor!",
+    "",
+    "Another great weekend ahead in Montclair. Here's what's happening around town:",
+    "",
+    "── EDITOR'S PICKS ──────────────────────────────",
+    "",
+    `⭐ ${events[0].name}`,
+    `   ${events[0].date} at ${events[0].time}`,
+    `   📍 ${events[0].venue}`,
+    `   ${events[0].description}`,
+    events[0].url ? `   🔗 ${events[0].url}` : "",
+    "",
+    `⭐ ${events[1].name}`,
+    `   ${events[1].date} at ${events[1].time}`,
+    `   📍 ${events[1].venue}`,
+    `   ${events[1].description}`,
+    "",
+    "── ALL EVENTS THIS WEEK ────────────────────────",
+    "",
+    ...events.slice(2).map(e => [
+      `• ${e.name}`,
+      `  ${e.date} at ${e.time}`,
+      `  📍 ${e.venue}`,
+      `  ${e.description}`,
+      e.isFree ? "  ✅ Free" : "",
+      e.isKidFriendly ? "  👨‍👩‍👧 Kid-friendly" : "",
+      e.url ? `  🔗 ${e.url}` : "",
+      "",
+    ].filter(Boolean).join("\n")),
+    "────────────────────────────────────────────────",
+    "",
+    "See you out there! 🎉",
+    "— Your Montclair Events Agent",
+  ];
  
-Events this week:
-${JSON.stringify(events, null, 2)}
- 
-Guidelines:
-- Start with "Subject: " on the first line
-- Write a short, upbeat intro (2-3 sentences)
-- Highlight 2-3 "Editor's Picks" (best/most exciting events) at the top
-- Then list remaining events grouped by category
-- For each event include: name, date/time, venue, brief description, and URL if available
-- Note if an event is free or kid-friendly where relevant
-- End with a warm sign-off like "See you out there! 🎉"
-- Use plain text with dashes for bullets — no HTML
-- Keep it scannable, fun, and under 600 words`,
-      },
-    ],
-  });
- 
-  const email = response.content
-    .filter((b) => b.type === "text")
-    .map((b) => b.text)
-    .join("");
+  const email = lines.join("\n");
   console.log("✅ Email composed");
   return email;
 }
@@ -121,7 +122,6 @@ async function sendEmail(emailText) {
     ? subjectMatch[1].trim()
     : "🗓️ Your Montclair Weekly Events Digest";
  
-  // Strip the "Subject: ..." line from the body
   const body = emailText.replace(/^Subject:.*\n?/m, "").trim();
  
   console.log("📧 Sending email to", process.env.TO_EMAIL, "...");
@@ -154,16 +154,9 @@ async function sendEmail(emailText) {
 async function main() {
   try {
     const events = await scrapeEvents();
- 
-    if (events.length === 0) {
-      console.log("⚠️  No events found this week — skipping email.");
-      return;
-    }
- 
     const emailText = await composeEmail(events);
     await sendEmail(emailText);
- 
-    console.log("\n🎉 Weekly digest complete!");
+    console.log("\n🎉 Test run complete!");
   } catch (err) {
     console.error("❌ Agent failed:", err.message);
     process.exit(1);
