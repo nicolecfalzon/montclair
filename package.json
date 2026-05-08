@@ -1,12 +1,16 @@
+bash
+
+cat > /mnt/user-data/outputs/package.json << 'ENDOFFILE'
 {
   "name": "montclair-events-agent",
   "version": "1.0.0",
-  "description": "Weekly events digest for Montclair, NJ — powered by Claude + web search",
+  "description": "Weekly events digest for Montclair, NJ — powered by Gemini + Resend",
   "main": "agent.js",
   "scripts": {
     "start": "node agent.js"
   },
-  "dependencies": {
-    "@anthropic-ai/sdk": "^0.39.0"
-  }
+  "dependencies": {}
 }
+ENDOFFILE
+echo "Done"
+Output
