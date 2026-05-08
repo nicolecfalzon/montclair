@@ -1,9 +1,9 @@
-// Montclair Events Agent — powered by Google Gemini (free tier) + Resend
+// Montclair Events Agent — powered by Google Gemini + Resend
 
 const LOCATION = "Montclair, NJ";
-const RADIUS_MILES = 10;
+const RADIUS_MILES = 15;
 const TIMEFRAME = "the next 7 days";
-const MAX_EVENTS = 15;
+const MAX_EVENTS = 30;
 const CATEGORIES = [
   "Live Music", "Family & Kids", "Festivals", "Arts & Culture",
   "Community Events", "Food & Drink", "Outdoor & Nature", "Markets & Fairs",
@@ -78,14 +78,14 @@ ${JSON.stringify(events, null, 2)}
 
 Guidelines:
 - Start with "Subject: " on the first line
-- Write a short upbeat intro (2-3 sentences)
+- Write a short upbeat intro (1-2 sentences)
 - Highlight 2-3 "Editor's Picks" at the top (best/most exciting events)
 - Then list remaining events grouped by category
 - For each event include: name, date/time, venue, brief description, and URL if available
 - Note if an event is free or kid-friendly where relevant
 - End with a warm sign-off like "See you out there! 🎉"
-- Use plain text with dashes for bullets — no HTML
-- Keep it scannable and fun, under 600 words`;
+- IMPORTANT: Use ONLY plain text. Do NOT use markdown — no asterisks, no pound signs, no double asterisks for bold. Use ALL CAPS for section headers and dashes (-) for bullets.
+- Keep it scannable and fun, under 2000 words`;
 
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
@@ -113,9 +113,21 @@ async function sendEmail(emailText) {
     ? subjectMatch[1].trim()
     : "🗓️ Your Montclair Weekly Events Digest";
 
-  const body = emailText.replace(/^Subject:.*\n?/m, "").trim();
+  // Strip markdown symbols that render as raw characters in plain text email
+  const body = emailText
+    .replace(/^Subject:.*\n?/m, "")
+    .replace(/\*\*(.*?)\*\*/g, "$1")  // remove **bold**
+    .replace(/\*(.*?)\*/g, "$1")       // remove *italic*
+    .replace(/^#+\s*/gm, "")           // remove ## headers
+    .trim();
 
-  console.log("📧 Sending email to", process.env.TO_EMAIL);
+  // Send to multiple recipients
+  const recipients = [
+    process.env.TO_EMAIL,
+    "patrickfalzon@gmail.com",
+  ].filter(Boolean); // filters out empty/undefined
+
+  console.log("📧 Sending email to:", recipients.join(", "));
   console.log("   Subject:", subject);
 
   const res = await fetch("https://api.resend.com/emails", {
@@ -126,7 +138,7 @@ async function sendEmail(emailText) {
     },
     body: JSON.stringify({
       from: process.env.FROM_EMAIL,
-      to: process.env.TO_EMAIL,
+      to: recipients,
       subject,
       text: body,
     }),
