@@ -165,5 +165,3 @@ echo "Done"
 Output
 
 Done
-Done
-Also update package.jso
