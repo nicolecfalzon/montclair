@@ -1,6 +1,3 @@
-bash
-
-cat > /mnt/user-data/outputs/agent.js << 'ENDOFFILE'
 // Montclair Events Agent — powered by Google Gemini (free tier) + Resend
 
 const LOCATION = "Montclair, NJ";
@@ -160,8 +157,3 @@ async function main() {
 }
 
 main();
-ENDOFFILE
-echo "Done"
-Output
-
-Done
