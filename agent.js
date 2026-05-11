@@ -1,9 +1,9 @@
 // Montclair Events Agent — powered by Google Gemini + Gmail
 
 const LOCATION = "Montclair, NJ";
-const RADIUS_MILES = 25;
-const TIMEFRAME = "the next 7 days";
-const MAX_EVENTS = 55;
+const RADIUS_MILES = 35;
+const TIMEFRAME = "the upcoming weekend (Friday, Saturday and Sunday)";
+const MAX_EVENTS = 45;
 const CATEGORIES = [
   "Live Music", "Family & Kids", "Festivals, Markets & Fairs",
 ];
