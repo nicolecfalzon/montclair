@@ -1,11 +1,15 @@
 // Montclair Events Agent — powered by Google Gemini + Gmail
 
 const LOCATION = "Montclair, NJ";
-const RADIUS_MILES = 35;
-const TIMEFRAME = "the upcoming weekend (Friday, Saturday and Sunday)";
-const MAX_EVENTS = 45;
+const RADIUS_MILES = 25;
+const TIMEFRAME = "the upcoming Friday, Saturday, and Sunday";
+const MAX_EVENTS = 55;
 const CATEGORIES = [
-  "Live Music", "Family & Kids", "Festivals, Markets & Fairs",
+  "Music & Nightlife",
+  "Family & Kids",
+  "Food, Drinks & Markets",
+  "Arts, Culture & Community",
+  "Outdoor & Nature",
 ];
 
 // ─── Step 1: Search for events using Gemini + Google Search grounding ─────
@@ -18,7 +22,7 @@ async function scrapeEvents() {
 
   const prompt = `Today is ${today}. You are a local events scout for ${LOCATION}.
 
-Search for upcoming events happening during ${TIMEFRAME} in and within ${RADIUS_MILES} miles of ${LOCATION}.
+Search for upcoming events happening ${TIMEFRAME} in and within ${RADIUS_MILES} miles of ${LOCATION}.
 
 Look at sources like Patch.com Montclair, Eventbrite Essex County NJ, Baristanet, NJ.com, Montclair Local, Essex County parks calendar, and local community sites.
 
@@ -26,10 +30,10 @@ Focus on these categories: ${CATEGORIES.join(", ")}.
 
 For each event extract:
 - name
-- date (e.g. "Saturday, May 10")
+- date (e.g. "Friday, May 9" or "Saturday, May 10")
 - time (e.g. "2:00 PM" or "All day")
 - venue (name and/or address)
-- category (pick the closest from the list above)
+- category (pick the closest from: ${CATEGORIES.join(", ")})
 - description (1-2 sentences)
 - url (source link if available, otherwise null)
 - isFree (true/false if known, otherwise null)
@@ -63,25 +67,27 @@ Find up to ${MAX_EVENTS} events. Example:
   return events;
 }
 
-// ─── Step 2: Compose the email digest using Gemini ────────────────────────
+// ─── Step 2: Compose the email as HTML for proper bold/bullet formatting ──
 async function composeEmail(events) {
   console.log("✍️  Composing email digest...");
 
-  const prompt = `Write a warm, friendly weekly events email digest for someone who lives in ${LOCATION}.
+  const prompt = `Write a warm, friendly weekend events email digest for people who live in ${LOCATION}.
 
-Events this week:
+Events this weekend:
 ${JSON.stringify(events, null, 2)}
 
-Guidelines:
-- Start with "Subject: " on the first line
-- Write a short upbeat intro (1-2 sentences)
-- Highlight 2-3 "Editor's Picks" at the top (best/most exciting events)
-- Then list remaining events grouped by category
-- For each event include: name, date/time, venue, brief description, and URL if available
-- Note if an event is free or kid-friendly where relevant
-- End with a warm sign-off like "See you out there! 🎉"
-- IMPORTANT: Use ONLY plain text. Do NOT use markdown — no asterisks, no pound signs, no double asterisks for bold. Use ALL CAPS for section headers and dashes (-) for bullets.
-- Keep it scannable and fun, under 600 words`;
+FORMAT RULES — follow these exactly:
+- First line must be: Subject: Montclair Weekend Events
+- After the subject line, write the entire email body as clean HTML
+- Start the body with: <p>Hey Falzons! 👋</p>
+- Write a short 2-sentence upbeat intro in a <p> tag
+- Then a section: <h2>⭐ Editor's Picks</h2> with the 3 most exciting events as <ul><li> bullet points
+- Then group ALL remaining events by category using <h2>Category Name</h2> and <ul><li> bullet points
+- Use fewer, broader categories — aim for 3-4 groups max with multiple events each
+- For each event in a list item include: event name in <strong> tags, then date/time, venue, one sentence description, and URL as a clickable link if available
+- Note Free 🆓 or Kid-friendly 👨‍👩‍👧 where relevant
+- End with: <p>See you out there! 🎉</p>
+- Do NOT use markdown. Only output the Subject line and then clean HTML.`;
 
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
@@ -109,15 +115,10 @@ async function sendEmail(emailText) {
   const subjectMatch = emailText.match(/^Subject:\s*(.+)/m);
   const subject = subjectMatch
     ? subjectMatch[1].trim()
-    : "🗓️ Your Montclair Weekly Events Digest";
+    : "🗓️ Your Montclair Weekend Events Digest";
 
-  // Strip any stray markdown symbols
-  const body = emailText
-    .replace(/^Subject:.*\n?/m, "")
-    .replace(/\*\*(.*?)\*\*/g, "$1")  // remove **bold**
-    .replace(/\*(.*?)\*/g, "$1")       // remove *italic*
-    .replace(/^#+\s*/gm, "")           // remove ## headers
-    .trim();
+  // Everything after the Subject line is the HTML body
+  const htmlBody = emailText.replace(/^Subject:.*\n?/m, "").trim();
 
   const recipients = [
     process.env.TO_EMAIL,
@@ -131,7 +132,7 @@ async function sendEmail(emailText) {
     service: "gmail",
     auth: {
       user: process.env.GMAIL_USER,
-      pass: process.env.GMAIL_APP_PASSWORD, // 16-char App Password, not your real password
+      pass: process.env.GMAIL_APP_PASSWORD,
     },
   });
 
@@ -139,7 +140,7 @@ async function sendEmail(emailText) {
     from: `"Montclair Events Agent" <${process.env.GMAIL_USER}>`,
     to: recipients.join(", "),
     subject,
-    text: body,
+    html: htmlBody, // sending as HTML so bold/bullets render properly
   });
 
   console.log("✅ Email sent! Message ID:", info.messageId);
@@ -151,12 +152,12 @@ async function main() {
   try {
     const events = await scrapeEvents();
     if (events.length === 0) {
-      console.log("⚠️  No events found this week — skipping email.");
+      console.log("⚠️  No events found this weekend — skipping email.");
       return;
     }
     const emailText = await composeEmail(events);
     await sendEmail(emailText);
-    console.log("\n🎉 Weekly digest complete!");
+    console.log("\n🎉 Weekend digest complete!");
   } catch (err) {
     console.error("❌ Agent failed:", err.message);
     process.exit(1);
