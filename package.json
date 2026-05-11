@@ -1,10 +1,12 @@
 {
   "name": "montclair-events-agent",
   "version": "1.0.0",
-  "description": "Weekly events digest for Montclair, NJ — powered by Gemini + Resend",
+  "description": "Weekly events digest for Montclair, NJ — powered by Gemini + Gmail",
   "main": "agent.js",
   "scripts": {
     "start": "node agent.js"
   },
-  "dependencies": {}
+  "dependencies": {
+    "nodemailer": "^6.9.0"
+  }
 }
