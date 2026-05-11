@@ -1,12 +1,11 @@
-// Montclair Events Agent — powered by Google Gemini + Resend
+// Montclair Events Agent — powered by Google Gemini + Gmail
 
 const LOCATION = "Montclair, NJ";
-const RADIUS_MILES = 15;
+const RADIUS_MILES = 25;
 const TIMEFRAME = "the next 7 days";
-const MAX_EVENTS = 30;
+const MAX_EVENTS = 55;
 const CATEGORIES = [
-  "Live Music", "Family & Kids", "Festivals", "Arts & Culture",
-  "Community Events", "Food & Drink", "Outdoor & Nature", "Markets & Fairs",
+  "Live Music", "Family & Kids", "Festivals, Markets & Fairs",
 ];
 
 // ─── Step 1: Search for events using Gemini + Google Search grounding ─────
@@ -47,16 +46,13 @@ Find up to ${MAX_EVENTS} events. Example:
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
-        tools: [{ googleSearch: {} }], // enables live web search grounding
+        tools: [{ googleSearch: {} }],
       }),
     }
   );
 
   const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error("Gemini API error: " + JSON.stringify(data));
-  }
+  if (!response.ok) throw new Error("Gemini API error: " + JSON.stringify(data));
 
   const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
   const jsonMatch = raw.match(/\[[\s\S]*\]/);
@@ -85,7 +81,7 @@ Guidelines:
 - Note if an event is free or kid-friendly where relevant
 - End with a warm sign-off like "See you out there! 🎉"
 - IMPORTANT: Use ONLY plain text. Do NOT use markdown — no asterisks, no pound signs, no double asterisks for bold. Use ALL CAPS for section headers and dashes (-) for bullets.
-- Keep it scannable and fun, under 2000 words`;
+- Keep it scannable and fun, under 600 words`;
 
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
@@ -106,14 +102,16 @@ Guidelines:
   return email;
 }
 
-// ─── Step 3: Send via Resend ───────────────────────────────────────────────
+// ─── Step 3: Send via Gmail (Nodemailer) ──────────────────────────────────
 async function sendEmail(emailText) {
+  const nodemailer = require("nodemailer");
+
   const subjectMatch = emailText.match(/^Subject:\s*(.+)/m);
   const subject = subjectMatch
     ? subjectMatch[1].trim()
     : "🗓️ Your Montclair Weekly Events Digest";
 
-  // Strip markdown symbols that render as raw characters in plain text email
+  // Strip any stray markdown symbols
   const body = emailText
     .replace(/^Subject:.*\n?/m, "")
     .replace(/\*\*(.*?)\*\*/g, "$1")  // remove **bold**
@@ -121,34 +119,31 @@ async function sendEmail(emailText) {
     .replace(/^#+\s*/gm, "")           // remove ## headers
     .trim();
 
-  // Send to multiple recipients
   const recipients = [
     process.env.TO_EMAIL,
     "patrickfalzon@gmail.com",
-  ].filter(Boolean); // filters out empty/undefined
+  ].filter(Boolean);
 
   console.log("📧 Sending email to:", recipients.join(", "));
   console.log("   Subject:", subject);
 
-  const res = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
-      "Content-Type": "application/json",
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: process.env.GMAIL_USER,
+      pass: process.env.GMAIL_APP_PASSWORD, // 16-char App Password, not your real password
     },
-    body: JSON.stringify({
-      from: process.env.FROM_EMAIL,
-      to: recipients,
-      subject,
-      text: body,
-    }),
   });
 
-  const data = await res.json();
-  if (!res.ok) throw new Error("Resend error: " + JSON.stringify(data));
+  const info = await transporter.sendMail({
+    from: `"Montclair Events Agent" <${process.env.GMAIL_USER}>`,
+    to: recipients.join(", "),
+    subject,
+    text: body,
+  });
 
-  console.log("✅ Email sent! Resend ID:", data.id);
-  return data;
+  console.log("✅ Email sent! Message ID:", info.messageId);
+  return info;
 }
 
 // ─── Main ──────────────────────────────────────────────────────────────────
