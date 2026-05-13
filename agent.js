@@ -39,8 +39,9 @@ For each event extract:
 - isFree (true/false if known, otherwise null)
 - isKidFriendly (true/false if relevant, otherwise null)
 
+IMPORTANT: Do not include duplicate events. Each real-world event should appear only once.
 Return ONLY a valid JSON array — no markdown, no explanation, no backticks.
-Find up to ${MAX_EVENTS} events. Example:
+Find up to ${MAX_EVENTS} unique events. Example:
 [{"name":"...","date":"...","time":"...","venue":"...","category":"...","description":"...","url":"...","isFree":true,"isKidFriendly":true}]`;
 
   const response = await fetch(
@@ -67,6 +68,41 @@ Find up to ${MAX_EVENTS} events. Example:
   return events;
 }
 
+// ─── Step 1b: Deduplicate events ──────────────────────────────────────────
+function deduplicateEvents(events) {
+  const seen = new Set();
+  const unique = [];
+
+  for (const event of events) {
+    // Normalize name: lowercase, strip punctuation, collapse spaces
+    const normalizedName = event.name
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    // Secondary key: venue + date (catches same event listed under slightly different names)
+    const venueKey = (event.venue || "").toLowerCase().replace(/\s+/g, "").slice(0, 20);
+    const dateKey = (event.date || "").toLowerCase().replace(/\s+/g, "");
+    const nameDateKey = `${normalizedName}|${dateKey}`;
+    const venueDateKey = `${venueKey}|${dateKey}`;
+
+    if (!seen.has(nameDateKey) && !seen.has(venueDateKey)) {
+      seen.add(nameDateKey);
+      seen.add(venueDateKey);
+      unique.push(event);
+    }
+  }
+
+  const removed = events.length - unique.length;
+  if (removed > 0) {
+    console.log(`🧹 Removed ${removed} duplicate(s) — ${unique.length} unique events remaining`);
+  } else {
+    console.log(`✅ No duplicates found — ${unique.length} events`);
+  }
+  return unique;
+}
+
 // ─── Step 2: Compose the email as HTML for proper bold/bullet formatting ──
 async function composeEmail(events) {
   console.log("✍️  Composing email digest...");
@@ -77,15 +113,16 @@ Events this weekend:
 ${JSON.stringify(events, null, 2)}
 
 FORMAT RULES — follow these exactly:
-- First line must be: Subject: Montclair Weekend Events
+- First line must be: Subject: [your subject line here]
 - After the subject line, write the entire email body as clean HTML
 - Start the body with: <p>Hey Falzons! 👋</p>
 - Write a short 2-sentence upbeat intro in a <p> tag
 - Then a section: <h2>⭐ Editor's Picks</h2> with the 3 most exciting events as <ul><li> bullet points
 - Then group ALL remaining events by category using <h2>Category Name</h2> and <ul><li> bullet points
-- Use fewer, broader categories — aim for 3-4 groups max with multiple events each
+- Use fewer, broader categories — aim for 4-5 groups max with multiple events each
 - For each event in a list item include: event name in <strong> tags, then date/time, venue, one sentence description, and URL as a clickable link if available
 - Note Free 🆓 or Kid-friendly 👨‍👩‍👧 where relevant
+- Each event should appear ONCE only — do not repeat any event
 - End with: <p>See you out there! 🎉</p>
 - Do NOT use markdown. Only output the Subject line and then clean HTML.`;
 
@@ -117,7 +154,6 @@ async function sendEmail(emailText) {
     ? subjectMatch[1].trim()
     : "🗓️ Your Montclair Weekend Events Digest";
 
-  // Everything after the Subject line is the HTML body
   const htmlBody = emailText.replace(/^Subject:.*\n?/m, "").trim();
 
   const recipients = [
@@ -140,7 +176,7 @@ async function sendEmail(emailText) {
     from: `"Montclair Events Agent" <${process.env.GMAIL_USER}>`,
     to: recipients.join(", "),
     subject,
-    html: htmlBody, // sending as HTML so bold/bullets render properly
+    html: htmlBody,
   });
 
   console.log("✅ Email sent! Message ID:", info.messageId);
@@ -150,11 +186,14 @@ async function sendEmail(emailText) {
 // ─── Main ──────────────────────────────────────────────────────────────────
 async function main() {
   try {
-    const events = await scrapeEvents();
+    const rawEvents = await scrapeEvents();
+    const events = deduplicateEvents(rawEvents);
+
     if (events.length === 0) {
       console.log("⚠️  No events found this weekend — skipping email.");
       return;
     }
+
     const emailText = await composeEmail(events);
     await sendEmail(emailText);
     console.log("\n🎉 Weekend digest complete!");
