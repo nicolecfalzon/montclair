@@ -116,11 +116,12 @@ FORMAT RULES — follow these exactly:
 - First line must be: Subject: [your subject line here]
 - After the subject line, write the entire email body as clean HTML
 - Start the body with: <p>Hey Falzons! 👋</p>
+- Then include one short, funny, uplifting original quote about weekends, fun, or joy to get the reader excited — written in <p><em>"quote text"</em></p> tags. Make it lighthearted and a little silly, NOT a real quote from a known person — write an original line and do not attribute it to anyone real. If you want to attribute it, invent a playful fictional source (e.g. "— Anonymous Weekend Enthusiast" or "— Every Dog, Probably")
 - Write a short 2-sentence upbeat intro in a <p> tag
-- Then a section: <h2>⭐ Editor's Picks</h2> with the 3 most exciting events as <ul><li> bullet points
-- Then group ALL remaining events by category using <h2>Category Name</h2> and <ul><li> bullet points
-- Use fewer, broader categories — aim for 4-5 groups max with multiple events each
-- For each event in a list item include: event name in <strong> tags, then date/time, venue, one sentence description, and URL as a clickable link if available
+- Then group ALL events by day of the week using <h2>Friday</h2>, <h2>Saturday</h2>, <h2>Sunday</h2> (only include a day heading if there's at least one event that day)
+- Within each day, order events chronologically by time when possible
+- Pick the 3 most exciting events overall (your "editor's picks") and prefix those specific list items with a ⭐ before the event name, wherever they fall within their day's list — do not move or group them separately
+- For each event in a list item include: event name in <strong> tags, then time, venue, one sentence description, and URL as a clickable link if available
 - Note Free 🆓 or Kid-friendly 👨‍👩‍👧 where relevant
 - Each event should appear ONCE only — do not repeat any event
 - End with: <p>See you out there! 🎉</p>
