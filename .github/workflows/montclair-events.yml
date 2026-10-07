@@ -1,27 +1,21 @@
 name: Montclair Weekly Events Digest
-
 on:
   schedule:
     # Every Tuesday at 8:00 AM Eastern (12:00 UTC)
     - cron: '0 12 * * 2'
   workflow_dispatch: # allows manual trigger from GitHub UI
-
 jobs:
   send-digest:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
-
+        uses: actions/checkout@v7
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
-          node-version: '20'
-
+          node-version: '24'
       - name: Install dependencies
         run: npm install
-
       - name: Run events agent & send email
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
